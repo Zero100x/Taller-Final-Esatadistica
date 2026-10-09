@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Estadístico - Restaurantes USA | Taller Final</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Plotly.js CDN (para Boxplots y distribuciones interactivas avanzadas) -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+    .tab-active {
+      border-bottom: 3px solid #10b981;
+      color: #10b981;
+      font-weight: 700;
+    }
+    .tab-inactive {
+      color: #94a3b8;
+    }
+    .tab-inactive:hover {
+      color: #f1f5f9;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- ========================================================================= -->
+  <!-- NAVBAR SUPERIOR -->
+  <!-- ========================================================================= -->
+  <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <svg class="w-6 h-6 text-slate-950 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            Restaurantes USA <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">Taller Final v2</span>
+          </h1>
+          <p class="text-xs text-slate-400">Análisis Estadístico Interactivo • Python, Pandas, Seaborn & Chart.js</p>
+        </div>
+      </div>
+
+      <!-- Botones de Acción / Descargas -->
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <a href="Taller_Final_Estadistica.ipynb" download class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+          <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 19.5h20L12 2zm0 3.5l7 12H5l7-12z"/></svg>
+          Descargar Notebook (.ipynb)
+        </a>
+        <a href="clientes_final.csv" download class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          CSV Limpio (.csv)
+        </a>
+        <button onclick="switchTab('deploy')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs shadow-md shadow-emerald-600/30 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Desplegar en Web 🚀
+        </button>
+      </div>
+    </div>
+
+    <!-- Pestañas de Navegación -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto gap-8 text-sm font-medium border-t border-slate-800/80">
+      <button onclick="switchTab('charts')" id="tab-btn-charts" class="py-3 px-1 tab-active flex items-center gap-2 whitespace-nowrap">
+        <span>📊</span> Gráficos del Taller (Bloque 4)
+      </button>
+      <button onclick="switchTab('stats')" id="tab-btn-stats" class="py-3 px-1 tab-inactive flex items-center gap-2 whitespace-nowrap">
+        <span>🧮</span> Estadísticos Dinámicos (Bloque 3)
+      </button>
+      <button onclick="switchTab('explorer')" id="tab-btn-explorer" class="py-3 px-1 tab-inactive flex items-center gap-2 whitespace-nowrap">
+        <span>🔍</span> Explorador de Datos Limpios
+      </button>
+      <button onclick="switchTab('cleaning')" id="tab-btn-cleaning" class="py-3 px-1 tab-inactive flex items-center gap-2 whitespace-nowrap">
+        <span>🧹</span> Proceso de Limpieza (Bloques 1 y 2)
+      </button>
+      <button onclick="switchTab('deploy')" id="tab-btn-deploy" class="py-3 px-1 tab-inactive flex items-center gap-2 whitespace-nowrap">
+        <span>🌐</span> Guía de Despliegue Gratis
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- BARRA DE FILTROS GLOBALES INTERACTIVOS -->
+  <!-- ========================================================================= -->
+  <section class="bg-slate-900 border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-4">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs uppercase tracking-wider font-bold text-slate-300">Filtros Interactivos en Tiempo Real</span>
+          <span class="text-xs text-slate-500">| Modifica cualquier filtro para recalcular gráficos y estadísticas al instante</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="filtered-count-badge" class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full font-semibold">
+            Cargando registros...
+          </span>
+          <button onclick="resetFilters()" class="text-xs text-slate-400 hover:text-white underline decoration-slate-600 transition">
+            Restablecer Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Selectores de Filtro -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <!-- Filtro Ciudad -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Ciudad</label>
+          <select id="filter-ciudad" onchange="applyFilters()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="ALL">Todas las ciudades (10)</option>
+          </select>
+        </div>
+
+        <!-- Filtro Género -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Género</label>
+          <select id="filter-genero" onchange="applyFilters()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="ALL">Todos los géneros</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Masculino">Masculino</option>
+          </select>
+        </div>
+
+        <!-- Filtro Consume Licor -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Consume Licor</label>
+          <select id="filter-licor" onchange="applyFilters()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="ALL">Todos (Sí y No)</option>
+            <option value="Sí">Consume Licor (Sí)</option>
+            <option value="No">No Consume Licor (No)</option>
+          </select>
+        </div>
+
+        <!-- Filtro Preferencias -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Preferencia Alimenticia</label>
+          <select id="filter-pref" onchange="applyFilters()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="ALL">Todas las preferencias</option>
+          </select>
+        </div>
+
+        <!-- Filtro Estrato -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Estrato Socioeconómico</label>
+          <select id="filter-estrato" onchange="applyFilters()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="ALL">Todos los estratos</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- TARJETAS KPI (RESUMEN DINÁMICO) -->
+  <!-- ========================================================================= -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 w-full">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <!-- KPI 1 -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
+          <span>Clientes Filtrados</span>
+          <span class="text-emerald-400 font-bold" id="kpi-percent">100%</span>
+        </div>
+        <div class="text-2xl font-extrabold text-white" id="kpi-total">30,000</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">de 30,000 registros totales</div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
+          <span>Edad Promedio</span>
+          <span class="text-sky-400">🎂</span>
+        </div>
+        <div class="text-2xl font-extrabold text-white" id="kpi-edad">48.9 <span class="text-sm font-normal text-slate-400">años</span></div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Rango válido: 0 a 100 años</div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
+          <span>Ingreso Mensual Promedio</span>
+          <span class="text-emerald-400">💵</span>
+        </div>
+        <div class="text-2xl font-extrabold text-white" id="kpi-ingreso">$5,390</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Ingresos mensuales (USD)</div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
+          <span>Gasto Promedio Comida</span>
+          <span class="text-amber-400">🍽️</span>
+        </div>
+        <div class="text-2xl font-extrabold text-white" id="kpi-gasto">$32.60</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Gasto por visita (USD)</div>
+      </div>
+
+      <!-- KPI 5 -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition col-span-2 sm:col-span-1">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1">
+          <span>Frecuencia Visita</span>
+          <span class="text-indigo-400">🔄</span>
+        </div>
+        <div class="text-2xl font-extrabold text-white" id="kpi-frecuencia">3.9 <span class="text-sm font-normal text-slate-400">visitas</span></div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Promedio de visitas al mes</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- CONTENIDO PRINCIPAL POR PESTAÑAS -->
+  <!-- ========================================================================= -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- TAB 1: GRÁFICOS DEL TALLER (BLOQUE 4) -->
+    <!-- --------------------------------------------------------------------- -->
+    <div id="tab-charts" class="space-y-8">
+
+      <!-- 4.1 Gráfico de Barras: Clientes por Ciudad -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span class="text-emerald-400">4.1</span> Diagrama de Barras: Clientes por Ciudad
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Distribución de clientes y métricas asociadas en las 10 principales ciudades</p>
+          </div>
+          <!-- Opciones de métrica -->
+          <div class="flex items-center gap-2 bg-slate-800/80 p-1 rounded-lg border border-slate-700/80 text-xs">
+            <span class="text-slate-400 pl-2 text-[11px] font-medium">Métrica:</span>
+            <button onclick="updateBarMetric('count')" id="btn-metric-count" class="px-2.5 py-1 rounded bg-emerald-600 text-slate-950 font-bold text-xs transition">Conteo</button>
+            <button onclick="updateBarMetric('gasto')" id="btn-metric-gasto" class="px-2.5 py-1 rounded text-slate-300 hover:text-white text-xs transition">Gasto Prom.</button>
+            <button onclick="updateBarMetric('ingreso')" id="btn-metric-ingreso" class="px-2.5 py-1 rounded text-slate-300 hover:text-white text-xs transition">Ingreso Prom.</button>
+          </div>
+        </div>
+        <div class="h-80 sm:h-96 w-full relative">
+          <canvas id="chart-bar-cities"></canvas>
+        </div>
+      </div>
+
+      <!-- 4.2 Boxplots Comparativos: Edad Antes vs Después -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span class="text-sky-400">4.2</span> Diagramas de Bigotes (Boxplots) Comparativos de Edad
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Impacto de la limpieza de datos: a la izquierda datos con outliers (-5 y 300 años), a la derecha datos corregidos (0 a 100 años)
+            </p>
+          </div>
+          <div class="text-xs px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
+            Plotly Interactivo (Haz zoom y pasa el cursor)
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+            <div class="text-xs font-semibold text-rose-400 mb-1 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span> Antes de Limpiar (Con Incoherencias: min -5, max 300)
+            </div>
+            <div id="plotly-box-orig" class="h-72 w-full"></div>
+          </div>
+          <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+            <div class="text-xs font-semibold text-emerald-400 mb-1 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Después de Limpiar (Corregido con Imputación por Licor)
+            </div>
+            <div id="plotly-box-clean" class="h-72 w-full"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4.3 Diagramas Circulares: Género y Preferencia Alimenticia -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Torta Género -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="text-amber-400">4.3</span> Diagrama Circular: Proporción por Género
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Distribución porcentual de la clientela según género</p>
+            </div>
+            <div class="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-lg text-xs">
+              <button onclick="togglePieType('gender', 'pie')" id="btn-gender-pie" class="px-2 py-0.5 rounded bg-emerald-600 text-slate-950 font-bold text-[11px]">Torta</button>
+              <button onclick="togglePieType('gender', 'doughnut')" id="btn-gender-doughnut" class="px-2 py-0.5 rounded text-slate-400 text-[11px]">Dona</button>
+            </div>
+          </div>
+          <div class="h-72 w-full relative flex-1 flex items-center justify-center">
+            <canvas id="chart-pie-gender"></canvas>
+          </div>
+        </div>
+
+        <!-- Torta Preferencias -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="text-indigo-400">4.3b</span> Diagrama Circular: Preferencia Alimenticia
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Imputadas con la moda de cada ciudad de residencia</p>
+            </div>
+            <div class="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-lg text-xs">
+              <button onclick="togglePieType('pref', 'pie')" id="btn-pref-pie" class="px-2 py-0.5 rounded bg-emerald-600 text-slate-950 font-bold text-[11px]">Torta</button>
+              <button onclick="togglePieType('pref', 'doughnut')" id="btn-pref-doughnut" class="px-2 py-0.5 rounded text-slate-400 text-[11px]">Dona</button>
+            </div>
+          </div>
+          <div class="h-72 w-full relative flex-1 flex items-center justify-center">
+            <canvas id="chart-pie-pref"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4.4 Histogramas Interactivos: Ingresos Mensuales y Gasto en Comida -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span class="text-teal-400">4.4</span> Histogramas: Distribución de Ingresos y Gasto
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Analiza la concentración, asimetría y líneas de tendencia central (Media y Mediana)</p>
+          </div>
+          <div class="flex items-center gap-4 flex-wrap text-xs">
+            <!-- Variable switch -->
+            <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+              <button onclick="setHistVariable('ingresos')" id="btn-hist-ingresos" class="px-2.5 py-1 rounded bg-emerald-600 text-slate-950 font-bold text-xs transition">Ingresos Mensuales</button>
+              <button onclick="setHistVariable('gasto')" id="btn-hist-gasto" class="px-2.5 py-1 rounded text-slate-300 hover:text-white text-xs transition">Gasto en Comida</button>
+            </div>
+
+            <!-- Bins Slider -->
+            <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+              <span class="text-slate-400 text-[11px]">Intervalos (Bins):</span>
+              <input type="range" id="hist-bins" min="10" max="60" value="30" step="5" oninput="updateHistBins(this.value)" class="w-20 accent-emerald-500 cursor-pointer">
+              <span id="hist-bins-val" class="font-bold text-emerald-400 text-xs w-5">30</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-80 sm:h-96 w-full relative">
+          <canvas id="chart-histogram"></canvas>
+        </div>
+        <div class="flex items-center justify-center gap-6 mt-3 text-xs text-slate-400">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-0.5 bg-rose-500 inline-block"></span>
+            <span>Línea Roja: <strong class="text-rose-400" id="hist-legend-media">Media</strong></span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-0.5 bg-amber-400 inline-block"></span>
+            <span>Línea Amarilla: <strong class="text-amber-400" id="hist-legend-mediana">Mediana</strong></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- TAB 2: ESTADÍSTICOS DINÁMICOS (BLOQUE 3) -->
+    <!-- --------------------------------------------------------------------- -->
+    <div id="tab-stats" class="hidden space-y-8">
+      
+      <!-- Bloque 3.1: Función calcular_promedio Dinámica -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-800">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Función 3.1</span>
+              <h2 class="text-lg font-bold text-white">calcular_promedio(df, columna_grupo)</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Agrupa por la columna seleccionada y calcula la media de <code class="text-emerald-400">edad</code>, <code class="text-emerald-400">frecuencia_visita</code>, <code class="text-emerald-400">promedio_gasto_comida</code> e <code class="text-emerald-400">ingresos_mensuales</code>.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-300">Agrupar por:</label>
+            <select id="stat-group-col" onchange="renderPromedioTable()" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="ciudad_residencia">ciudad_residencia</option>
+              <option value="genero">genero</option>
+              <option value="consume_licor">consume_licor</option>
+              <option value="preferencias_alimenticias">preferencias_alimenticias</option>
+              <option value="estrato_socioeconomico">estrato_socioeconomico</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabla de Promedios Generada Dinámicamente -->
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-300 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4" id="th-group-name">Grupo</th>
+                <th class="py-3 px-4">Clientes (N)</th>
+                <th class="py-3 px-4">Edad Promedio</th>
+                <th class="py-3 px-4">Frecuencia Visita</th>
+                <th class="py-3 px-4">Promedio Gasto Comida</th>
+                <th class="py-3 px-4">Ingresos Mensuales Promedio</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-promedios" class="divide-y divide-slate-800/60 font-medium">
+              <!-- Se rellena con JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bloque 3.2: Función tabla_cruzada Dinámica -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-800">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">Función 3.2</span>
+              <h2 class="text-lg font-bold text-white">tabla_cruzada(df, col_filas, col_columnas)</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Tabla de contingencia normalizada por filas (cada fila suma 100%), con mapa de calor según el porcentaje.
+            </p>
+          </div>
+          
+          <!-- Selectores de variables -->
+          <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-1.5">
+              <label class="text-xs text-slate-400">Filas:</label>
+              <select id="stat-cross-row" onchange="renderCrossTable()" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                <option value="ciudad_residencia">ciudad_residencia</option>
+                <option value="estrato_socioeconomico">estrato_socioeconomico</option>
+                <option value="consume_licor">consume_licor</option>
+                <option value="genero">genero</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <label class="text-xs text-slate-400">Columnas:</label>
+              <select id="stat-cross-col" onchange="renderCrossTable()" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                <option value="genero">genero</option>
+                <option value="preferencias_alimenticias">preferencias_alimenticias</option>
+                <option value="consume_licor">consume_licor</option>
+                <option value="estrato_socioeconomico">estrato_socioeconomico</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla Cruzada Dinámica -->
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-center text-xs">
+            <thead class="bg-slate-950 text-slate-300 font-semibold text-[11px] tracking-wider border-b border-slate-800" id="thead-crosstab">
+              <!-- Rellenado por JS -->
+            </thead>
+            <tbody id="tbody-crosstab" class="divide-y divide-slate-800/60">
+              <!-- Rellenado por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- TAB 3: EXPLORADOR DE DATOS LIMPIOS -->
+    <!-- --------------------------------------------------------------------- -->
+    <div id="tab-explorer" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>🔍</span> Explorador de Datos (<span id="explorer-count">30,000</span> filas)
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Explora interactivamente los registros limpios con búsqueda instantánea y paginación</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="text" id="explorer-search" oninput="searchData(this.value)" placeholder="Buscar por ciudad, estrato, comida..." class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <button onclick="downloadCleanCSV()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-lg text-xs transition">
+              Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla Paginada -->
+        <div class="overflow-x-auto custom-scrollbar border border-slate-800 rounded-xl">
+          <table class="w-full text-left text-xs whitespace-nowrap">
+            <thead class="bg-slate-950 text-slate-300 uppercase text-[11px] font-semibold border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-3">#</th>
+                <th class="py-3 px-3">Ciudad</th>
+                <th class="py-3 px-3">Género</th>
+                <th class="py-3 px-3">Edad</th>
+                <th class="py-3 px-3">Licor</th>
+                <th class="py-3 px-3">Preferencia</th>
+                <th class="py-3 px-3">Estrato</th>
+                <th class="py-3 px-3">Frecuencia</th>
+                <th class="py-3 px-3">Gasto Comida</th>
+                <th class="py-3 px-3">Ingresos Mensuales</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-explorer" class="divide-y divide-slate-800/60 font-medium">
+              <!-- Rellenado por JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Controles de paginación -->
+        <div class="flex items-center justify-between pt-4 text-xs text-slate-400">
+          <div id="pagination-info">Mostrando registros 1 a 20</div>
+          <div class="flex items-center gap-2">
+            <button onclick="changePage(-1)" id="btn-page-prev" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed">Anterior</button>
+            <span id="pagination-current" class="px-2 font-bold text-white">1</span>
+            <button onclick="changePage(1)" id="btn-page-next" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed">Siguiente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- TAB 4: PROCESO DE LIMPIEZA (BLOQUES 1 Y 2) -->
+    <!-- --------------------------------------------------------------------- -->
+    <div id="tab-cleaning" class="hidden space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Bloque 1 -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 font-bold flex items-center justify-center text-sm">1</span>
+            <h3 class="text-base font-bold text-white">Reconocimiento de Datos</h3>
+          </div>
+          <p class="text-xs text-slate-400 mb-4">
+            Se realiza la exploración inicial con <code class="text-sky-300">df.head()</code>, <code class="text-sky-300">df.info()</code>, <code class="text-sky-300">df.describe()</code> y <code class="text-sky-300">df.isnull().sum()</code>.
+          </p>
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2">
+            <div class="text-emerald-400 font-semibold">Dimensiones Originales:</div>
+            <div>• Filas: 30,000 registros</div>
+            <div>• Columnas: 17 variables</div>
+            <div>• Variables con nulos: edad (101), gasto comida (145), preferencias (1,403), teléfono (15,166), correo (15,072)</div>
+          </div>
+        </div>
+
+        <!-- Bloque 2 -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-sm">2</span>
+            <h3 class="text-base font-bold text-white">Limpieza de Datos</h3>
+          </div>
+          <ul class="space-y-2.5 text-xs text-slate-300">
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>Duplicados:</strong> Verificación y eliminación por <code class="text-slate-200">id_persona</code>.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>Tratamiento de Edad:</strong> 207 edades incoherentes (&lt; 0 o &gt; 100 años como -5 y 300) convertidas a NaN e imputadas con el promedio según <code class="text-slate-200">consume_licor</code>.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>Variables cualitativas:</strong> 1,403 nulos en preferencias alimenticias imputados con la <strong>moda de cada ciudad</strong>.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>Correos electrónicos:</strong> Nulos rellenados con el texto <code class="text-slate-200">"NA"</code>.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>Exportación:</strong> Guardado como <code class="text-emerald-300">clientes_final.csv</code> sin columnas temporales.</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Resumen de Modas por Ciudad -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
+        <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+          <span>🍽️</span> Modas de Preferencia Alimenticia por Ciudad (Criterio de Imputación)
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">Cada valor faltante se rellenó con el plato más popular de la ciudad del cliente:</p>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">Boston</div><div class="text-emerald-400 mt-1">Vegetariano</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">Chicago</div><div class="text-rose-400 mt-1">Carnes</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">Dallas</div><div class="text-rose-400 mt-1">Carnes</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">Denver</div><div class="text-rose-400 mt-1">Carnes</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">Houston</div><div class="text-rose-400 mt-1">Carnes</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">Miami</div><div class="text-amber-400 mt-1">Mariscos</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">NYC</div><div class="text-rose-400 mt-1">Carnes</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">Phoenix</div><div class="text-rose-400 mt-1">Carnes</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">San Diego</div><div class="text-emerald-400 mt-1">Vegetariano</div></div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center"><div class="font-bold text-white">Seattle</div><div class="text-emerald-400 mt-1">Vegetariano</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- --------------------------------------------------------------------- -->
+    <!-- TAB 5: GUÍA DE DESPLIEGUE GRATIS EN LA WEB -->
+    <!-- --------------------------------------------------------------------- -->
+    <div id="tab-deploy" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-md">
+        <div class="max-w-3xl">
+          <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs border border-emerald-500/30">100% Gratuito y Sin Servidor</span>
+          <h2 class="text-2xl font-extrabold text-white mt-3">Cómo desplegar este Dashboard en la Web</h2>
+          <p class="text-sm text-slate-400 mt-2">
+            Este dashboard está diseñado con arquitectura estática pura (HTML, CSS y JS con datos embebidos). No requiere pagar por servidores, ni configurar Node.js ni bases de datos.
+          </p>
+
+          <div class="mt-8 space-y-6">
+            <!-- Opción A: GitHub Pages -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-5">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-xl">🐙</span>
+                <h3 class="text-base font-bold text-white">Opción 1: GitHub Pages (Recomendado)</h3>
+                <span class="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-semibold">Toma 2 minutos</span>
+              </div>
+              <ol class="list-decimal list-inside text-xs text-slate-300 space-y-2 mt-3 pl-1 leading-relaxed">
+                <li>Crea un repositorio en <strong>GitHub</strong> (ej: <code class="text-emerald-400">taller-estadistica</code>).</li>
+                <li>Sube los archivos de esta carpeta: <code class="text-slate-200">index.html</code>, <code class="text-slate-200">datos_dashboard.js</code>, y opcionalmente <code class="text-slate-200">clientes_final.csv</code>.</li>
+                <li>Ve a <strong>Settings → Pages</strong> en tu repositorio de GitHub.</li>
+                <li>En <em>Branch</em> selecciona <strong>main</strong> (o master) y carpeta <strong>/ (root)</strong>, luego haz clic en <strong>Save</strong>.</li>
+                <li>¡Listo! Tu sitio quedará publicado en: <code class="text-sky-400">https://tu-usuario.github.io/taller-estadistica/</code></li>
+              </ol>
+            </div>
+
+            <!-- Opción B: Vercel / Netlify -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-5">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-xl">⚡</span>
+                <h3 class="text-base font-bold text-white">Opción 2: Netlify Drop / Vercel (Arrastrar y Soltar)</h3>
+                <span class="text-[11px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded font-semibold">Toma 30 segundos</span>
+              </div>
+              <ol class="list-decimal list-inside text-xs text-slate-300 space-y-2 mt-3 pl-1 leading-relaxed">
+                <li>Entra a <a href="https://app.netlify.com/drop" target="_blank" class="text-sky-400 underline font-semibold">app.netlify.com/drop</a>.</li>
+                <li>Arrastra toda la carpeta del taller (<code class="text-slate-200">Taller final Estadistica</code>) dentro del recuadro.</li>
+                <li>Netlify te generará un enlace público inmediato con HTTPS gratis (ej: <code class="text-sky-400">https://restaurantes-usa.netlify.app</code>).</li>
+              </ol>
+            </div>
+
+            <!-- Opción C: Ver Localmente -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-5">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-xl">💻</span>
+                <h3 class="text-base font-bold text-white">Opción 3: Probar Localmente en tu Computador</h3>
+              </div>
+              <p class="text-xs text-slate-300 mt-2">
+                Solo haz <strong>doble clic</strong> sobre el archivo <code class="text-emerald-400">index.html</code> en tu explorador de archivos de Windows y se abrirá en tu navegador de inmediato.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER -->
+  <!-- ========================================================================= -->
+  <footer class="bg-slate-900 border-t border-slate-800 py-6 text-center text-xs text-slate-500 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div>Taller Final de Estadística • Base de Datos Restaurantes USA</div>
+      <div>Librerías: Pandas, NumPy, Matplotlib, Seaborn, Chart.js, Plotly</div>
+      <div class="text-slate-400">Desarrollado para Entrega y Despliegue Web</div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- CARGA DEL DATASET EMBEBIDO (30,000 REGISTROS) -->
+  <!-- ========================================================================= -->
+  <script src="datos_dashboard.js"></script>
+
+  <!-- ========================================================================= -->
+  <!-- LÓGICA JAVASCRIPT DEL DASHBOARD (INTERACTIVIDAD TOTAL) -->
+  <!-- ========================================================================= -->
+  <script>
+    // Variables de estado
+    let rawRecords = []; // [ciudad, genero, licor, pref, estrato, edad, frec, gasto, ingreso]
+    let filteredRecords = [];
+    let barChartInstance = null;
+    let pieGenderInstance = null;
+    let piePrefInstance = null;
+    let histChartInstance = null;
+
+    let currentBarMetric = 'count'; // 'count', 'gasto', 'ingreso'
+    let currentGenderChartType = 'pie';
+    let currentPrefChartType = 'pie';
+    let currentHistVar = 'ingresos'; // 'ingresos', 'gasto'
+    let currentHistBins = 30;
+
+    let explorerCurrentPage = 1;
+    const explorerPageSize = 20;
+    let explorerRecords = [];
+
+    // Inicialización al cargar la ventana
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof DASHBOARD_DATA !== 'undefined' && DASHBOARD_DATA.records) {
+        rawRecords = DASHBOARD_DATA.records;
+        filteredRecords = [...rawRecords];
+        initFilters();
+        updateKPIs();
+        renderAllCharts();
+        renderPromedioTable();
+        renderCrossTable();
+        initExplorer();
+        renderPlotlyBoxes();
+        document.getElementById('filtered-count-badge').textContent = `${rawRecords.length.toLocaleString()} registros activos`;
+      } else {
+        alert("No se pudo cargar datos_dashboard.js. Verifica que esté en la misma carpeta.");
+      }
+    });
+
+    // Pestañas
+    function switchTab(tabId) {
+      const tabs = ['charts', 'stats', 'explorer', 'cleaning', 'deploy'];
+      tabs.forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tabId) {
+          el.classList.remove('hidden');
+          btn.className = "py-3 px-1 tab-active flex items-center gap-2 whitespace-nowrap";
+        } else {
+          el.classList.add('hidden');
+          btn.className = "py-3 px-1 tab-inactive flex items-center gap-2 whitespace-nowrap";
+        }
+      });
+      // Resize Plotly boxes if switching to charts
+      if (tabId === 'charts') {
+        setTimeout(() => {
+          Plotly.Plots.resize('plotly-box-orig');
+          Plotly.Plots.resize('plotly-box-clean');
+        }, 150);
+      }
+    }
+
+    // Inicializar Selectores de Filtro
+    function initFilters() {
+      const ciudades = [...new Set(rawRecords.map(r => r[0]))].sort();
+      const prefs = [...new Set(rawRecords.map(r => r[3]))].sort();
+      const estratos = ['Bajo', 'Medio', 'Alto', 'Muy Alto'];
+
+      const selCiudad = document.getElementById('filter-ciudad');
+      ciudades.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        selCiudad.appendChild(opt);
+      });
+
+      const selPref = document.getElementById('filter-pref');
+      prefs.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        selPref.appendChild(opt);
+      });
+
+      const selEstrato = document.getElementById('filter-estrato');
+      estratos.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e;
+        opt.textContent = e;
+        selEstrato.appendChild(opt);
+      });
+    }
+
+    // Aplicar Filtros Globales
+    function applyFilters() {
+      const c = document.getElementById('filter-ciudad').value;
+      const g = document.getElementById('filter-genero').value;
+      const l = document.getElementById('filter-licor').value;
+      const p = document.getElementById('filter-pref').value;
+      const e = document.getElementById('filter-estrato').value;
+
+      filteredRecords = rawRecords.filter(r => {
+        if (c !== 'ALL' && r[0] !== c) return false;
+        if (g !== 'ALL' && r[1] !== g) return false;
+        if (l !== 'ALL' && r[2] !== l) return false;
+        if (p !== 'ALL' && r[3] !== p) return false;
+        if (e !== 'ALL' && r[4] !== e) return false;
+        return true;
+      });
+
+      document.getElementById('filtered-count-badge').textContent = `${filteredRecords.length.toLocaleString()} registros filtrados`;
+      updateKPIs();
+      renderAllCharts();
+      renderPromedioTable();
+      renderCrossTable();
+      initExplorer();
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-ciudad').value = 'ALL';
+      document.getElementById('filter-genero').value = 'ALL';
+      document.getElementById('filter-licor').value = 'ALL';
+      document.getElementById('filter-pref').value = 'ALL';
+      document.getElementById('filter-estrato').value = 'ALL';
+      applyFilters();
+    }
+
+    // Actualizar KPIs
+    function updateKPIs() {
+      const count = filteredRecords.length;
+      const total = rawRecords.length;
+      const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0';
+
+      document.getElementById('kpi-total').textContent = count.toLocaleString();
+      document.getElementById('kpi-percent').textContent = `${percent}%`;
+
+      if (count === 0) {
+        document.getElementById('kpi-edad').textContent = '0';
+        document.getElementById('kpi-ingreso').textContent = '$0';
+        document.getElementById('kpi-gasto').textContent = '$0';
+        document.getElementById('kpi-frecuencia').textContent = '0';
+        return;
+      }
+
+      let sumEdad = 0, sumFrec = 0, sumGasto = 0, sumIngreso = 0;
+      for (let i = 0; i < count; i++) {
+        const r = filteredRecords[i];
+        sumEdad += r[5];
+        sumFrec += r[6];
+        sumGasto += r[7];
+        sumIngreso += r[8];
+      }
+
+      document.getElementById('kpi-edad').innerHTML = `${(sumEdad / count).toFixed(1)} <span class="text-sm font-normal text-slate-400">años</span>`;
+      document.getElementById('kpi-ingreso').textContent = `$${Math.round(sumIngreso / count).toLocaleString()}`;
+      document.getElementById('kpi-gasto').textContent = `$${(sumGasto / count).toFixed(2)}`;
+      document.getElementById('kpi-frecuencia').innerHTML = `${(sumFrec / count).toFixed(1)} <span class="text-sm font-normal text-slate-400">visitas</span>`;
+    }
+
+    // =========================================================================
+    // RENDERIZADO DE GRÁFICOS (CHART.JS & PLOTLY)
+    // =========================================================================
+    function renderAllCharts() {
+      renderBarChart();
+      renderPieGender();
+      renderPiePref();
+      renderHistogram();
+    }
+
+    // 4.1 Diagrama de Barras
+    function renderBarChart() {
+      const cityData = {};
+      filteredRecords.forEach(r => {
+        const city = r[0];
+        if (!cityData[city]) cityData[city] = { count: 0, gastoSum: 0, ingresoSum: 0 };
+        cityData[city].count++;
+        cityData[city].gastoSum += r[7];
+        cityData[city].ingresoSum += r[8];
+      });
+
+      // Ordenar por métrica seleccionada
+      const sortedCities = Object.keys(cityData).sort((a, b) => {
+        if (currentBarMetric === 'count') return cityData[b].count - cityData[a].count;
+        if (currentBarMetric === 'gasto') return (cityData[b].gastoSum / cityData[b].count) - (cityData[a].gastoSum / cityData[a].count);
+        return (cityData[b].ingresoSum / cityData[b].count) - (cityData[a].ingresoSum / cityData[a].count);
+      });
+
+      const labels = sortedCities;
+      const values = sortedCities.map(c => {
+        if (currentBarMetric === 'count') return cityData[c].count;
+        if (currentBarMetric === 'gasto') return Number((cityData[c].gastoSum / cityData[c].count).toFixed(2));
+        return Math.round(cityData[c].ingresoSum / cityData[c].count);
+      });
+
+      const labelMap = {
+        'count': 'Cantidad de Clientes',
+        'gasto': 'Gasto Promedio en Comida ($USD)',
+        'ingreso': 'Ingreso Mensual Promedio ($USD)'
+      };
+
+      const ctx = document.getElementById('chart-bar-cities').getContext('2d');
+      if (barChartInstance) barChartInstance.destroy();
+
+      // Paleta viridis adaptada
+      const colors = [
+        '#440154', '#482878', '#3e4989', '#31688e', '#26828e',
+        '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'
+      ];
+
+      barChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: labelMap[currentBarMetric],
+            data: values,
+            backgroundColor: colors.slice(0, labels.length),
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  if (currentBarMetric === 'count') return ` ${ctx.parsed.y.toLocaleString()} clientes`;
+                  if (currentBarMetric === 'gasto') return ` $${ctx.parsed.y.toFixed(2)} USD`;
+                  return ` $${ctx.parsed.y.toLocaleString()} USD`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', weight: '600' } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            }
+          }
+        }
+      });
+    }
+
+    function updateBarMetric(m) {
+      currentBarMetric = m;
+      ['count', 'gasto', 'ingreso'].forEach(id => {
+        const btn = document.getElementById(`btn-metric-${id}`);
+        if (id === m) {
+          btn.className = "px-2.5 py-1 rounded bg-emerald-600 text-slate-950 font-bold text-xs transition";
+        } else {
+          btn.className = "px-2.5 py-1 rounded text-slate-300 hover:text-white text-xs transition";
+        }
+      });
+      renderBarChart();
+    }
+
+    // 4.2 Boxplots Comparativos (Plotly)
+    function renderPlotlyBoxes() {
+      if (typeof DASHBOARD_DATA === 'undefined') return;
+
+      const layoutCommon = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#94a3b8', family: 'Plus Jakarta Sans' },
+        margin: { t: 25, r: 25, b: 40, l: 50 },
+        yaxis: { gridcolor: 'rgba(255, 255, 255, 0.08)' }
+      };
+
+      // Boxplot 1: Datos Originales (Con outliers)
+      const traceOrig = {
+        y: DASHBOARD_DATA.sample_edad_orig,
+        type: 'box',
+        name: 'Antes de Limpiar',
+        marker: { color: '#f43f5e', outliercolor: '#e11d48' },
+        boxpoints: 'outliers'
+      };
+      Plotly.newPlot('plotly-box-orig', [traceOrig], {
+        ...layoutCommon,
+        yaxis: { ...layoutCommon.yaxis, title: 'Edad (Años)', range: [-15, 320] }
+      }, { responsive: true, displayModeBar: false });
+
+      // Boxplot 2: Datos Limpios
+      const traceClean = {
+        y: DASHBOARD_DATA.sample_edad_clean,
+        type: 'box',
+        name: 'Después de Limpiar',
+        marker: { color: '#10b981' },
+        boxpoints: 'outliers'
+      };
+      Plotly.newPlot('plotly-box-clean', [traceClean], {
+        ...layoutCommon,
+        yaxis: { ...layoutCommon.yaxis, title: 'Edad (Años)', range: [10, 90] }
+      }, { responsive: true, displayModeBar: false });
+    }
+
+    // 4.3 Diagramas Circulares
+    function renderPieGender() {
+      const counts = { 'Femenino': 0, 'Masculino': 0 };
+      filteredRecords.forEach(r => {
+        if (counts[r[1]] !== undefined) counts[r[1]]++;
+      });
+
+      const ctx = document.getElementById('chart-pie-gender').getContext('2d');
+      if (pieGenderInstance) pieGenderInstance.destroy();
+
+      pieGenderInstance = new Chart(ctx, {
+        type: currentGenderChartType,
+        data: {
+          labels: ['Femenino', 'Masculino'],
+          datasets: [{
+            data: [counts['Femenino'], counts['Masculino']],
+            backgroundColor: ['#f43f5e', '#06b6d4'],
+            borderColor: '#0f172a',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', weight: '600' } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const p = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                  return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${p}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderPiePref() {
+      const counts = {};
+      filteredRecords.forEach(r => {
+        const pref = r[3];
+        counts[pref] = (counts[pref] || 0) + 1;
+      });
+
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
+
+      const ctx = document.getElementById('chart-pie-pref').getContext('2d');
+      if (piePrefInstance) piePrefInstance.destroy();
+
+      const colors = ['#f43f5e', '#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
+
+      piePrefInstance = new Chart(ctx, {
+        type: currentPrefChartType,
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors.slice(0, labels.length),
+            borderColor: '#0f172a',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', weight: '600' } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const p = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                  return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${p}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function togglePieType(target, type) {
+      if (target === 'gender') {
+        currentGenderChartType = type;
+        document.getElementById('btn-gender-pie').className = type === 'pie' ? "px-2 py-0.5 rounded bg-emerald-600 text-slate-950 font-bold text-[11px]" : "px-2 py-0.5 rounded text-slate-400 text-[11px]";
+        document.getElementById('btn-gender-doughnut').className = type === 'doughnut' ? "px-2 py-0.5 rounded bg-emerald-600 text-slate-950 font-bold text-[11px]" : "px-2 py-0.5 rounded text-slate-400 text-[11px]";
+        renderPieGender();
+      } else {
+        currentPrefChartType = type;
+        document.getElementById('btn-pref-pie').className = type === 'pie' ? "px-2 py-0.5 rounded bg-emerald-600 text-slate-950 font-bold text-[11px]" : "px-2 py-0.5 rounded text-slate-400 text-[11px]";
+        document.getElementById('btn-pref-doughnut').className = type === 'doughnut' ? "px-2 py-0.5 rounded bg-emerald-600 text-slate-950 font-bold text-[11px]" : "px-2 py-0.5 rounded text-slate-400 text-[11px]";
+        renderPiePref();
+      }
+    }
+
+    // 4.4 Histograma
+    function renderHistogram() {
+      if (filteredRecords.length === 0) return;
+
+      const dataVals = filteredRecords.map(r => currentHistVar === 'ingresos' ? r[8] : r[7]);
+      const min = Math.min(...dataVals);
+      const max = Math.max(...dataVals);
+      const binWidth = (max - min) / currentHistBins;
+
+      const bins = Array(currentHistBins).fill(0);
+      const binLabels = [];
+
+      for (let i = 0; i < currentHistBins; i++) {
+        const bStart = min + i * binWidth;
+        const bEnd = bStart + binWidth;
+        binLabels.push(currentHistVar === 'ingresos' ? `$${Math.round(bStart)}` : `$${bStart.toFixed(0)}`);
+      }
+
+      dataVals.forEach(v => {
+        let idx = Math.floor((v - min) / binWidth);
+        if (idx >= currentHistBins) idx = currentHistBins - 1;
+        if (idx < 0) idx = 0;
+        bins[idx]++;
+      });
+
+      // Cálculo Media y Mediana
+      const sorted = [...dataVals].sort((a, b) => a - b);
+      const mean = dataVals.reduce((a, b) => a + b, 0) / dataVals.length;
+      const median = sorted.length % 2 === 0 ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2 : sorted[Math.floor(sorted.length / 2)];
+
+      document.getElementById('hist-legend-media').textContent = currentHistVar === 'ingresos' ? `$${Math.round(mean).toLocaleString()}` : `$${mean.toFixed(2)}`;
+      document.getElementById('hist-legend-mediana').textContent = currentHistVar === 'ingresos' ? `$${Math.round(median).toLocaleString()}` : `$${median.toFixed(2)}`;
+
+      const ctx = document.getElementById('chart-histogram').getContext('2d');
+      if (histChartInstance) histChartInstance.destroy();
+
+      histChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: binLabels,
+          datasets: [{
+            label: currentHistVar === 'ingresos' ? 'Ingresos Mensuales' : 'Gasto en Comida',
+            data: bins,
+            backgroundColor: currentHistVar === 'ingresos' ? 'rgba(56, 189, 248, 0.7)' : 'rgba(52, 211, 153, 0.7)',
+            borderColor: currentHistVar === 'ingresos' ? '#38bdf8' : '#34d399',
+            borderWidth: 1,
+            borderRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', maxTicksLimit: 12 }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            }
+          }
+        }
+      });
+    }
+
+    function setHistVariable(v) {
+      currentHistVar = v;
+      if (v === 'ingresos') {
+        document.getElementById('btn-hist-ingresos').className = "px-2.5 py-1 rounded bg-emerald-600 text-slate-950 font-bold text-xs transition";
+        document.getElementById('btn-hist-gasto').className = "px-2.5 py-1 rounded text-slate-300 hover:text-white text-xs transition";
+      } else {
+        document.getElementById('btn-hist-gasto').className = "px-2.5 py-1 rounded bg-emerald-600 text-slate-950 font-bold text-xs transition";
+        document.getElementById('btn-hist-ingresos').className = "px-2.5 py-1 rounded text-slate-300 hover:text-white text-xs transition";
+      }
+      renderHistogram();
+    }
+
+    function updateHistBins(val) {
+      currentHistBins = parseInt(val);
+      document.getElementById('hist-bins-val').textContent = val;
+      renderHistogram();
+    }
+
+    // =========================================================================
+    // ESTADÍSTICOS DINÁMICOS (BLOQUE 3)
+    // =========================================================================
+
+    // 3.1 calcular_promedio
+    function renderPromedioTable() {
+      const col = document.getElementById('stat-group-col').value;
+      const colMap = {
+        'ciudad_residencia': 0,
+        'genero': 1,
+        'consume_licor': 2,
+        'preferencias_alimenticias': 3,
+        'estrato_socioeconomico': 4
+      };
+      const idx = colMap[col];
+      document.getElementById('th-group-name').textContent = col;
+
+      const groups = {};
+      filteredRecords.forEach(r => {
+        const key = r[idx];
+        if (!groups[key]) groups[key] = { count: 0, edadSum: 0, frecSum: 0, gastoSum: 0, ingresoSum: 0 };
+        groups[key].count++;
+        groups[key].edadSum += r[5];
+        groups[key].frecSum += r[6];
+        groups[key].gastoSum += r[7];
+        groups[key].ingresoSum += r[8];
+      });
+
+      const tbody = document.getElementById('tbody-promedios');
+      tbody.innerHTML = '';
+
+      Object.keys(groups).sort().forEach(g => {
+        const item = groups[g];
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40 transition";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-bold text-white">${g}</td>
+          <td class="py-3 px-4 text-slate-400">${item.count.toLocaleString()}</td>
+          <td class="py-3 px-4 text-sky-400 font-semibold">${(item.edadSum / item.count).toFixed(2)} años</td>
+          <td class="py-3 px-4 text-indigo-400 font-semibold">${(item.frecSum / item.count).toFixed(2)}</td>
+          <td class="py-3 px-4 text-emerald-400 font-semibold">$${(item.gastoSum / item.count).toFixed(2)}</td>
+          <td class="py-3 px-4 text-amber-400 font-semibold">$${Math.round(item.ingresoSum / item.count).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 3.2 tabla_cruzada
+    function renderCrossTable() {
+      const rowCol = document.getElementById('stat-cross-row').value;
+      const colCol = document.getElementById('stat-cross-col').value;
+      const colMap = {
+        'ciudad_residencia': 0,
+        'genero': 1,
+        'consume_licor': 2,
+        'preferencias_alimenticias': 3,
+        'estrato_socioeconomico': 4
+      };
+
+      const rIdx = colMap[rowCol];
+      const cIdx = colMap[colCol];
+
+      const rowKeys = [...new Set(filteredRecords.map(r => r[rIdx]))].sort();
+      const colKeys = [...new Set(filteredRecords.map(r => r[cIdx]))].sort();
+
+      const counts = {};
+      rowKeys.forEach(rk => {
+        counts[rk] = {};
+        colKeys.forEach(ck => { counts[rk][ck] = 0; });
+      });
+
+      filteredRecords.forEach(r => {
+        const rk = r[rIdx];
+        const ck = r[cIdx];
+        if (counts[rk] && counts[rk][ck] !== undefined) {
+          counts[rk][ck]++;
+        }
+      });
+
+      // Thead
+      const thead = document.getElementById('thead-crosstab');
+      thead.innerHTML = `
+        <tr>
+          <th class="py-3 px-4 text-left font-bold text-white uppercase text-xs">${rowCol} \\ ${colCol}</th>
+          ${colKeys.map(k => `<th class="py-3 px-4 font-semibold text-slate-300 text-xs">${k}</th>`).join('')}
+          <th class="py-3 px-4 font-bold text-emerald-400 text-xs">Total Fila</th>
+        </tr>
+      `;
+
+      // Tbody
+      const tbody = document.getElementById('tbody-crosstab');
+      tbody.innerHTML = '';
+
+      rowKeys.forEach(rk => {
+        const rowTotal = Object.values(counts[rk]).reduce((a, b) => a + b, 0);
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40 transition";
+
+        let cellsHtml = `<td class="py-3 px-4 text-left font-bold text-white">${rk}</td>`;
+        colKeys.forEach(ck => {
+          const val = counts[rk][ck];
+          const pct = rowTotal > 0 ? (val / rowTotal) * 100 : 0;
+          // Color heat
+          let heatBg = 'transparent';
+          if (pct > 30) heatBg = 'bg-emerald-500/20 text-emerald-300 font-bold';
+          else if (pct > 15) heatBg = 'bg-sky-500/10 text-sky-300 font-medium';
+          else heatBg = 'text-slate-400';
+
+          cellsHtml += `<td class="py-3 px-4 ${heatBg}">${pct.toFixed(2)}% <span class="text-[10px] text-slate-500 block">(${val})</span></td>`;
+        });
+
+        cellsHtml += `<td class="py-3 px-4 font-bold text-emerald-400">100.0%</td>`;
+        tr.innerHTML = cellsHtml;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // =========================================================================
+    // EXPLORADOR DE DATOS
+    // =========================================================================
+    function initExplorer() {
+      explorerRecords = [...filteredRecords];
+      explorerCurrentPage = 1;
+      renderExplorerPage();
+    }
+
+    function searchData(query) {
+      const q = query.toLowerCase().trim();
+      if (!q) {
+        explorerRecords = [...filteredRecords];
+      } else {
+        explorerRecords = filteredRecords.filter(r => {
+          return r[0].toLowerCase().includes(q) ||
+                 r[1].toLowerCase().includes(q) ||
+                 r[2].toLowerCase().includes(q) ||
+                 r[3].toLowerCase().includes(q) ||
+                 r[4].toLowerCase().includes(q);
+        });
+      }
+      explorerCurrentPage = 1;
+      renderExplorerPage();
+    }
+
+    function renderExplorerPage() {
+      const tbody = document.getElementById('tbody-explorer');
+      tbody.innerHTML = '';
+
+      const total = explorerRecords.length;
+      document.getElementById('explorer-count').textContent = total.toLocaleString();
+
+      const start = (explorerCurrentPage - 1) * explorerPageSize;
+      const end = Math.min(start + explorerPageSize, total);
+
+      for (let i = start; i < end; i++) {
+        const r = explorerRecords[i];
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40 transition";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 text-slate-500 font-mono">${i + 1}</td>
+          <td class="py-2.5 px-3 font-semibold text-white">${r[0]}</td>
+          <td class="py-2.5 px-3 text-slate-300">${r[1]}</td>
+          <td class="py-2.5 px-3 text-slate-200">${r[5]}</td>
+          <td class="py-2.5 px-3">${r[2] === 'Sí' ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-semibold text-[11px]">Sí</span>' : '<span class="text-slate-500">No</span>'}</td>
+          <td class="py-2.5 px-3 text-emerald-400 font-medium">${r[3]}</td>
+          <td class="py-2.5 px-3 text-slate-300">${r[4]}</td>
+          <td class="py-2.5 px-3 text-indigo-400">${r[6]}</td>
+          <td class="py-2.5 px-3 text-sky-400">$${r[7].toFixed(2)}</td>
+          <td class="py-2.5 px-3 text-emerald-400 font-semibold">$${r[8].toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      document.getElementById('pagination-info').textContent = total > 0 ? `Mostrando registros ${start + 1} a ${end} de ${total.toLocaleString()}` : 'Sin registros';
+      document.getElementById('pagination-current').textContent = explorerCurrentPage;
+      document.getElementById('btn-page-prev').disabled = explorerCurrentPage <= 1;
+      document.getElementById('btn-page-next').disabled = end >= total;
+    }
+
+    function changePage(delta) {
+      explorerCurrentPage += delta;
+      renderExplorerPage();
+    }
+
+    function downloadCleanCSV() {
+      window.location.href = 'clientes_final.csv';
+    }
+  </script>
+</body>
+</html>
